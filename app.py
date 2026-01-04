@@ -3,6 +3,7 @@ from database import init_db, get_last_update, update_timestamp, save_data, quer
 from api_client import fetch_from_api, API_KEY
 import threading
 import json
+import os
 
 app = Flask(__name__)
 
@@ -65,4 +66,5 @@ if __name__ == '__main__':
         print("Empty database detected. Starting initial sync...")
         start_background_sync()
         
-    app.run(port=5001, debug=True)
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port)
