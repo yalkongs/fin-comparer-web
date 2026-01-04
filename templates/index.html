@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>은행 상품 조회 | 최적 금리 찾기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --sidebar: #12161f;
+            --accent: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.4);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --card: rgba(30, 41, 59, 0.5);
+            --border: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 280px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 48px;
+            background: linear-gradient(135deg, #818cf8, #4f46e5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-box {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.4rem;
+            box-shadow: 0 4px 12px var(--accent-glow);
+            -webkit-text-fill-color: initial;
+        }
+
+        nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 14px 20px;
+            border-radius: 14px;
+            text-align: left;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .nav-btn.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .update-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            font-size: 0.85rem;
+        }
+
+        /* Main */
+        main {
+            flex: 1;
+            padding: 48px;
+            overflow-y: auto;
+            background: radial-gradient(circle at top right, #1e293b22, transparent);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        select,
+        .view-toggle {
+            background: var(--sidebar);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            padding: 5px;
+        }
+
+        .toggle-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Grid View */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 28px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .best-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--success);
+            color: #000;
+            padding: 6px 16px;
+            font-weight: 800;
+            font-size: 0.75rem;
+            border-bottom-left-radius: 16px;
+        }
+
+        /* List View (Table) */
+        .table-container {
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 18px 24px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        th:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+        }
+
+        .sort-icon {
+            font-size: 0.7rem;
+            margin-left: 5px;
+            opacity: 0.5;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--sidebar);
+            width: 90%;
+            max-width: 600px;
+            border-radius: 32px;
+            border: 1px solid var(--border);
+            padding: 48px;
+            position: relative;
+            animation: modalIn 0.3s ease-out;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+        }
+
+        .detail-row {
+            margin-bottom: 24px;
+        }
+
+        .detail-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .detail-val {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .bank-tag {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 600;
+        }
+
+        .prod-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            min-height: 3.2rem;
+        }
+
+        .rate-val {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+
+        .rate-val span {
+            font-size: 1rem;
+        }
+
+        /* Pref Tags */
+        .pref-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 15px;
+        }
+
+        .pref-tag {
+            background: rgba(79, 70, 229, 0.15);
+            color: #a5b4fc;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(79, 70, 229, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card,
+        tr {
+            animation: fadeIn 0.4s ease backwards;
+        }
+    </style>
+</head>
+
+<body>
+    <aside>
+        <div class="logo">
+            <div class="logo-box">B</div>
+            <span>은행 상품 조회</span>
+        </div>
+        <nav id="sidebarNav">
+            <button class="nav-btn active" data-cat="deposit">💰 예금 상품</button>
+            <button class="nav-btn" data-cat="saving">📈 적금 상품</button>
+            <button class="nav-btn" data-cat="credit">💳 개인 신용대출</button>
+            <button class="nav-btn" data-cat="mortgage">🏠 주택 담보대출</button>
+        </nav>
+        <div class="update-box">
+            <div style="color: var(--text-muted); margin-bottom: 4px;">마지막 데이터 동기화</div>
+            <div id="lastUpdateIdx">-</div>
+            <button id="updateBtn"
+                style="width:100%; margin-top:10px; padding:8px; border-radius:8px; border:1px solid var(--accent); background:transparent; color:var(--accent); cursor:pointer;">지금
+                갱신하기</button>
+            <div style="margin-top: 15px; font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+                Developer: 황원철
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <h1 id="viewTitle">예금 상품 최저 금리</h1>
+                <p style="color: var(--text-muted); margin-top: 8px;">전국 은행의 실시간 공시 데이터를 비교합니다.</p>
+            </div>
+        </header>
+
+        <div class="toolbar">
+            <div class="view-toggle">
+                <button class="toggle-btn active" id="gridToggle">그리드 뷰</button>
+                <button class="toggle-btn" id="listToggle">리스트 뷰</button>
+            </div>
+            <div class="controls">
+                <select id="termSelect">
+                    <option value="12">12개월 기준</option>
+                    <option value="24">24개월 기준</option>
+                    <option value="36">36개월 기준</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="productGrid" class="grid"></div>
+
+        <div id="productTable" class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="sortData('bank')">은행 <span class="sort-icon">⇅</span></th>
+                        <th onclick="sortData('name')">상품명 <span class="sort-icon">⇅</span></th>
+                        <th onclick="sortData('rate')">기본 금리 <span class="sort-icon">⇅</span></th>
+                        <th onclick="sortData('rate2')">우대 금리 <span class="sort-icon">⇅</span></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentCat = 'deposit';
+        let currentTerm = 12;
+        let viewMode = 'grid'; // 'grid' or 'list'
+        let productsData = [];
+
+        const catNames = {
+            'deposit': '예금 상품 최저 금리',
+            'saving': '적금 상품 최고 금리',
+            'credit': '개인 신용대출 최저 금리',
+            'mortgage': '주택 담보대출 최저 금리'
+        };
+
+        async function fetchStatus() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            document.getElementById('lastUpdateIdx').textContent = data.last_updated;
+        }
+
+        async function fetchProducts() {
+            const grid = document.getElementById('productGrid');
+            const table = document.getElementById('tableBody');
+
+            const res = await fetch(`/api/products?category=${currentCat}&term=${currentTerm}`);
+            productsData = await res.json();
+
+            render();
+        }
+
+        function render() {
+            const grid = document.getElementById('productGrid');
+            const tableBody = document.getElementById('tableBody');
+            const gridView = document.getElementById('productGrid');
+            const tableView = document.getElementById('productTable');
+
+            if (viewMode === 'grid') {
+                gridView.style.display = 'grid';
+                tableView.style.display = 'none';
+            } else {
+                gridView.style.display = 'none';
+                tableView.style.display = 'block';
+            }
+
+            grid.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            const isLoan = currentCat === 'credit' || currentCat === 'mortgage';
+            const bestRate = isLoan ? Math.min(...productsData.map(p => p.rate2)) : Math.max(...productsData.map(p => p.rate2));
+
+            productsData.forEach((p, idx) => {
+                const isBest = p.rate2 === bestRate;
+
+                // Render Card
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.animationDelay = (idx * 0.05) + 's';
+                card.innerHTML = `
+                    ${isBest ? '<div class="best-badge">BEST</div>' : ''}
+                    <span class="bank-tag">${p.bank}</span>
+                    <h3 class="prod-name">${p.name}</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                        <span style="color:var(--text-muted); font-size:0.9rem;">최고 금리</span>
+                        <div class="rate-val">${p.rate2.toFixed(2)}<span>%</span></div>
+                    </div>
+                    <div class="pref-tags">
+                        ${p.pref_categories.map(tag => `<span class="pref-tag">${tag}</span>`).join('')}
+                    </div>
+                `;
+                card.onclick = () => showDetail(p);
+                grid.appendChild(card);
+
+                // Render Row
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${p.bank}</td>
+                    <td style="font-weight:600;">${p.name} ${isBest ? '<span style="color:var(--success); margin-left:5px;">★</span>' : ''}</td>
+                    <td>${p.rate.toFixed(2)}%</td>
+                    <td style="color:var(--success); font-weight:700;">${p.rate2.toFixed(2)}%</td>
+                `;
+                row.onclick = () => showDetail(p);
+                tableBody.appendChild(row);
+            });
+        }
+
+        function showDetail(p) {
+            const modal = document.getElementById('detailModal');
+            const body = document.getElementById('modalBody');
+            body.innerHTML = `
+                <span class="bank-tag" style="font-size:1.1rem; color:var(--accent);">${p.bank}</span>
+                <h2 style="font-size:2rem; margin-bottom:40px;">${p.name}</h2>
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-bottom:40px;">
+                    <div style="background:var(--glass); padding:20px; border-radius:20px;">
+                        <div class="detail-label">기본 금리</div>
+                        <div class="detail-val" style="font-size:1.5rem; font-weight:700;">${p.rate.toFixed(2)}%</div>
+                    </div>
+                    <div style="background:var(--glass); padding:20px; border-radius:20px; border:1px solid var(--success);">
+                        <div class="detail-label">우대 금리 (최고)</div>
+                        <div class="detail-val" style="font-size:1.5rem; font-weight:700; color:var(--success);">${p.rate2.toFixed(2)}%</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-label">가입 방법</div>
+                    <div class="detail-val">${p.join_way}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">우대 항목</div>
+                    <div class="pref-tags">
+                        ${p.pref_categories.map(tag => `<span class="pref-tag" style="font-size:0.9rem; padding:6px 14px;">${tag}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="detail-row" style="margin-top:24px;">
+                    <div class="detail-label">만기 이자 설명</div>
+                    <div class="detail-val">${p.mtrt_int}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">기타 유의사항 및 우대조건</div>
+                    <div class="detail-val" style="color:var(--text-muted); font-size:0.95rem;">${p.etc_note}</div>
+                </div>
+
+                <button onclick="document.getElementById('detailModal').style.display='none'" 
+                    style="width:100%; margin-top:40px; padding:18px; border-radius:16px; border:none; background:var(--accent); color:white; font-size:1.1rem; font-weight:700; cursor:pointer;">
+                    확인
+                </button>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function sortData(key) {
+            const isLoan = currentCat === 'credit' || currentCat === 'mortgage';
+            productsData.sort((a, b) => {
+                if (key === 'rate' || key === 'rate2') return b[key] - a[key];
+                return a[key].localeCompare(b[key]);
+            });
+            render();
+        }
+
+        // Nav
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCat = btn.dataset.cat;
+                document.getElementById('viewTitle').textContent = catNames[currentCat];
+                fetchProducts();
+            });
+        });
+
+        // Toggle
+        document.getElementById('gridToggle').onclick = () => {
+            viewMode = 'grid';
+            document.getElementById('gridToggle').classList.add('active');
+            document.getElementById('listToggle').classList.remove('active');
+            render();
+        };
+        document.getElementById('listToggle').onclick = () => {
+            viewMode = 'list';
+            document.getElementById('listToggle').classList.add('active');
+            document.getElementById('gridToggle').classList.remove('active');
+            render();
+        };
+
+        document.getElementById('termSelect').onchange = (e) => {
+            currentTerm = e.target.value;
+            fetchProducts();
+        };
+
+        document.getElementById('closeModal').onclick = () => document.getElementById('detailModal').style.display = 'none';
+        window.onclick = (e) => { if (e.target == document.getElementById('detailModal')) document.getElementById('detailModal').style.display = 'none'; }
+
+        document.getElementById('updateBtn').onclick = async () => {
+            const btn = document.getElementById('updateBtn');
+            btn.textContent = '동기화 중...';
+            await fetch('/api/update', { method: 'POST' });
+            setTimeout(() => { btn.textContent = '갱신 완료'; fetchStatus(); fetchProducts(); }, 1500);
+        };
+
+        // Init
+        fetchStatus();
+        fetchProducts();
+    </script>
+</body>
+
+</html>
