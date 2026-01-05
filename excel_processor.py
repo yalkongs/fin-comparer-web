@@ -4,18 +4,21 @@ import re
 
 def process_financial_excel(file_path, target_category):
     """
-    엑셀 파일을 분석하고, 신용대출의 경우 일반신용과 한도대출을 분리하여 처리합니다.
+    엑셀 파일을 분석하고, 신용대출의 경우 한 파일 내에서 일반신용과 한도대출을 분리합니다.
     """
     try:
         try:
             df = pd.read_excel(file_path)
         except Exception:
-            df_list = pd.read_html(file_path)
-            df = df_list[0] if df_list else None
+            try:
+                df_list = pd.read_html(file_path)
+                df = df_list[0] if df_list else None
+            except:
+                df = None
             
-        if df is None: return None, None, "파일을 읽을 수 없습니다."
+        if df is None: return None, None, "파일 내용을 읽을 수 없습니다."
 
-        # 헤더 클렌징
+        # 헤더 클렌징 (모든 공백 제거하여 비교 용이하게 함)
         raw_cols = df.columns.tolist()
         df.columns = [str(c).replace('\n', '').replace('\r', '').replace(' ', '').strip() for c in df.columns]
         
@@ -32,8 +35,8 @@ def process_financial_excel(file_path, target_category):
     col_map = {
         'bank': ['금융회사', '금융기관', '은행명'],
         'name': ['상품명', '대출종류', '금융상품명'],
-        'base_rate': ['세전이자율', '평균금리', '최저금리', '기준금리', '저축금리', '900점초과', '801~900점'],
-        'max_rate': ['최고우대금리', '최고금리', '우대금리']
+        'base_rate': ['세전이자율', '평균금리', '최저금리', '기준금리', '저축금리', '900점초과'],
+        'max_rate': ['최고우대금리', '최고금리', '우대금리', '평균금리']
     }
 
     def find_actual_col(keys):
@@ -61,14 +64,13 @@ def process_financial_excel(file_path, target_category):
         if not bank or bank in ['nan', ''] or not name or name in ['nan', '']:
             continue
         
-        # --- [중요] 일반신용과 한도대출 분리 로직 ---
-        is_limit_loan = "마이너스" in name or "한도대출" in name
-        
-        # 업로드 시 선택한 카테고리에 맞는 데이터만 처리
-        if "credit" in target_category:
-            if target_category == "credit_limit" and not is_limit_loan: continue
-            if target_category == "credit_general" and is_limit_loan: continue
-        # ------------------------------------------
+        # --- [중요] 카테고리 결정 로직 ---
+        # 1. 사용자가 엑셀 업로드 시 'credit'을 선택했거나 현재 행의 성격이 대출인 경우
+        if target_category == 'credit' or "마이너스" in name or "한도대출" in name or "신용대출" in name:
+            is_limit = "마이너스" in name or "한도대출" in name
+            row_category = "credit_limit" if is_limit else "credit_general"
+        else:
+            row_category = target_category
 
         base_rate = to_float(row.get(c_base))
         max_rate = to_float(row.get(c_max)) if c_max else base_rate
@@ -83,7 +85,8 @@ def process_financial_excel(file_path, target_category):
                     note_parts.append(f"[{raw_cols[i]}] {val}")
         
         full_note = " | ".join(note_parts)
-        p_cd = f"EX_{target_category}_{idx}_{re.sub(r'[^a-zA-Z0-9]', '', bank)[:5]}"
+        # ID 생성 시 결정된 row_category 사용
+        p_cd = f"EX_{row_category}_{idx}_{re.sub(r'[^a-zA-Z0-9]', '', bank)[:5]}"
         
         tags = []
         for kw in ["첫거래", "급여", "자동이체", "카드", "앱"]:
@@ -93,7 +96,7 @@ def process_financial_excel(file_path, target_category):
             'fin_prdt_cd': p_cd,
             'kor_co_nm': bank,
             'fin_prdt_nm': name,
-            'category': target_category, # 분류된 카테고리 저장
+            'category': row_category, # 최종 결정된 카테고리
             'join_way': "상세 정보 참조",
             'mtrt_int': "상세 정보 참조",
             'etc_note': full_note,
@@ -101,6 +104,12 @@ def process_financial_excel(file_path, target_category):
         })
 
         for t in [12, 24, 36]:
-            options.append({'fin_prdt_cd': p_cd, 'save_trm': t, 'intr_rate': base_rate, 'intr_rate2': max_rate})
+            options.append({
+                'fin_prdt_cd': p_cd, 
+                'category': row_category, # 옵션에도 카테고리 정보 포함
+                'save_trm': t, 
+                'intr_rate': base_rate, 
+                'intr_rate2': max_rate
+            })
 
     return products, options, None

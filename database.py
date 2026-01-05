@@ -61,24 +61,32 @@ def save_data(category, products_list, options_list):
     cursor = conn.cursor()
     
     try:
-        # 1. 기존 데이터 삭제 (해당 카테고리만)
-        cursor.execute("DELETE FROM options WHERE product_id IN (SELECT id FROM products WHERE category = ?)", (category,))
-        cursor.execute("DELETE FROM products WHERE category = ?", (category,))
+        # 1. 기존 데이터 삭제
+        if category == 'credit':
+            cursor.execute("DELETE FROM options WHERE product_id IN (SELECT id FROM products WHERE category IN ('credit_general', 'credit_limit'))")
+            cursor.execute("DELETE FROM products WHERE category IN ('credit_general', 'credit_limit')")
+        else:
+            cursor.execute("DELETE FROM options WHERE product_id IN (SELECT id FROM products WHERE category = ?)", (category,))
+            cursor.execute("DELETE FROM products WHERE category = ?", (category,))
         
         # 2. 신규 상품 데이터 삽입
         for p in products_list:
+            p_cat = p.get('category', category)
+            p_id = f"{p_cat}_{p['fin_prdt_cd']}"
             cursor.execute('''INSERT INTO products 
                 (id, fin_prdt_cd, kor_co_nm, fin_prdt_nm, category, join_way, mtrt_int, etc_note, pref_categories)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                (f"{category}_{p['fin_prdt_cd']}", p['fin_prdt_cd'], p['kor_co_nm'], p['fin_prdt_nm'], category, 
+                (p_id, p['fin_prdt_cd'], p['kor_co_nm'], p['fin_prdt_nm'], p_cat, 
                  p.get('join_way', '정보 없음'), p.get('mtrt_int', '정보 없음'), p.get('etc_note', '정보 없음'), 
                  p.get('pref_categories', '[]')))
                 
         # 3. 신규 금리 옵션 삽입
         for o in options_list:
+            o_cat = o.get('category', category)
+            p_id = f"{o_cat}_{o['fin_prdt_cd']}"
             cursor.execute('''INSERT INTO options (product_id, save_trm, intr_rate, intr_rate2)
                 VALUES (?, ?, ?, ?)''',
-                (f"{category}_{o['fin_prdt_cd']}", int(o['save_trm']), o['intr_rate'], o['intr_rate2']))
+                (p_id, int(o['save_trm']), o['intr_rate'], o['intr_rate2']))
                 
         conn.commit()
     except Exception as e:
