@@ -60,23 +60,32 @@ def save_data(category, products_list, options_list):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Clear old data for this category
-    cursor.execute("DELETE FROM options WHERE product_id IN (SELECT id FROM products WHERE category = ?)", (category,))
-    cursor.execute("DELETE FROM products WHERE category = ?", (category,))
-    
-    for p in products_list:
-        cursor.execute('''INSERT INTO products 
-            (id, fin_prdt_cd, kor_co_nm, fin_prdt_nm, category, join_way, mtrt_int, etc_note, pref_categories)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-            (f"{category}_{p['fin_prdt_cd']}", p['fin_prdt_cd'], p['kor_co_nm'], p['fin_prdt_nm'], category, p['join_way'], p['mtrt_int'], p['etc_note'], p.get('pref_categories', '[]')))
-            
-    for o in options_list:
-        cursor.execute('''INSERT INTO options (product_id, save_trm, intr_rate, intr_rate2)
-            VALUES (?, ?, ?, ?)''',
-            (f"{category}_{o['fin_prdt_cd']}", int(o['save_trm']), o['intr_rate'], o['intr_rate2']))
-            
-    conn.commit()
-    conn.close()
+    try:
+        # 1. 기존 데이터 삭제 (해당 카테고리만)
+        cursor.execute("DELETE FROM options WHERE product_id IN (SELECT id FROM products WHERE category = ?)", (category,))
+        cursor.execute("DELETE FROM products WHERE category = ?", (category,))
+        
+        # 2. 신규 상품 데이터 삽입
+        for p in products_list:
+            cursor.execute('''INSERT INTO products 
+                (id, fin_prdt_cd, kor_co_nm, fin_prdt_nm, category, join_way, mtrt_int, etc_note, pref_categories)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                (f"{category}_{p['fin_prdt_cd']}", p['fin_prdt_cd'], p['kor_co_nm'], p['fin_prdt_nm'], category, 
+                 p.get('join_way', '정보 없음'), p.get('mtrt_int', '정보 없음'), p.get('etc_note', '정보 없음'), 
+                 p.get('pref_categories', '[]')))
+                
+        # 3. 신규 금리 옵션 삽입
+        for o in options_list:
+            cursor.execute('''INSERT INTO options (product_id, save_trm, intr_rate, intr_rate2)
+                VALUES (?, ?, ?, ?)''',
+                (f"{category}_{o['fin_prdt_cd']}", int(o['save_trm']), o['intr_rate'], o['intr_rate2']))
+                
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
 
 def query_best_products(category, term=12, limit=20):
     conn = sqlite3.connect(DB_PATH)
