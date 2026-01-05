@@ -1,96 +1,115 @@
 import pandas as pd
 import json
 import re
-import numpy as np
 
 def process_financial_excel(file_path, category):
     """
-    금융감독원 표준 엑셀 양식을 분석하여 데이터를 추출합니다.
+    금융감독원 엑셀 파일(.xls, .xlsx)을 읽어서 DB에 저장할 수 있는 형식으로 변환합니다.
+    사용자가 제공한 실제 파일 구조(헤더 내 줄바꿈 등)를 완벽히 반영합니다.
     """
     try:
-        # 데이터가 보통 2~4행부터 시작할 수 있으므로 헤더를 찾는 과정 포함
-        df = pd.read_excel(file_path)
-        
-        # 실제 데이터가 시작되는 헤더 행 찾기 (금융회사명이 있는 행)
-        header_row_idx = 0
-        for i, row in df.head(10).iterrows():
-            if any("금융회사" in str(cell) for cell in row):
-                header_row_idx = i
-                break
-        
-        # 헤더를 재설정하여 읽기
-        df = pd.read_excel(file_path, header=header_row_idx)
-        df.columns = [str(c).strip() for c in df.columns]
+        # 1. 파일 읽기 (금감원 XLS는 가끔 HTML 테이블일 수 있음)
+        try:
+            df = pd.read_excel(file_path)
+        except Exception:
+            df_list = pd.read_html(file_path)
+            df = df_list[0] if df_list else None
+            
+        if df is None:
+            return None, None, "파일을 읽을 수 없습니다. 올바른 엑셀 형식인지 확인해주세요."
+
+        # 2. 헤더 정문화 (줄바꿈 제거 및 공백 제거)
+        df.columns = [str(c).replace('\n', ' ').replace('  ', ' ').strip() for c in df.columns]
         
     except Exception as e:
-        return None, None, f"파일 읽기 실패: {str(e)}"
+        return None, None, f"분석 중 오류 발생: {str(e)}"
+
+    # 3. 컬럼 매핑 사전 (실제 파일 기반 고도화)
+    col_map = {
+        'bank': ['금융회사', '금융회사명', '금융기관'],
+        'name': ['상품명', '금융상품명'],
+        'base_rate': ['세전 이자율', '세전\n이자율', '평균 금리', '최저 금리', '기준금리'],
+        'max_rate': ['최고 우대금리', '최고\n우대금리', '최고 금리', '우대금리'],
+        'join_way': ['가입방법', '가입제한 여부', '가입제한\n여부'],
+        'note': ['우대조건', '유의사항', '대출종류', '금리 방식', '적립방식', '이자계산방식']
+    }
+
+    def find_actual_col(keys):
+        for k in keys:
+            for col in df.columns:
+                if k in col:
+                    return col
+        return None
+
+    c_bank = find_actual_col(col_map['bank'])
+    c_name = find_actual_col(col_map['name'])
+    c_base = find_actual_col(col_map['base_rate'])
+    c_max = find_actual_col(col_map['max_rate'])
+    
+    if not c_bank or not c_name:
+        return None, None, f"필수 컬럼을 찾을 수 없습니다. (현재 헤더: {', '.join(df.columns)})"
 
     products = []
     options = []
     
-    # 1. 컬럼 매핑 로직 (유연한 검색)
-    def find_col(keywords):
-        for col in df.columns:
-            if any(k in col for k in keywords):
-                return col
-        return None
-
-    col_bank = find_col(['금융회사명', '금융기관', '은행'])
-    col_name = find_col(['금융상품명', '상품명'])
-    col_join = find_col(['가입방법', '가입경로'])
-    col_mtrt = find_col(['만기 후 이자율', '만기후'])
-    col_note = find_col(['우대조건', '우대사항', '유의사항'])
-    
-    # 금리 컬럼 찾기 (12개월 기준을 우선적으로 찾음)
-    col_base_rate = find_col(['저축 금리', '기준금리', '최저금리', '평균금리'])
-    col_max_rate = find_col(['최고 우대금리', '최고금리', '우대금리'])
-
-    # 컬럼이 하나도 없으면 오류
-    if not col_bank or not col_name:
-        return None, None, "필수 항목(금융회사명, 상품명)을 찾을 수 없습니다. 엑셀 헤더를 확인해주세요."
-
-    for index, row in df.iterrows():
-        bank = str(row.get(col_bank, '')).strip()
-        name = str(row.get(col_name, '')).strip()
+    # 4. 데이터 추출 루프
+    for idx, row in df.iterrows():
+        bank = str(row.get(c_bank, '')).strip()
+        name = str(row.get(c_name, '')).strip()
         
-        if not bank or bank == 'nan' or name == 'nan': continue
+        if not bank or bank == 'nan' or not name or name == 'nan':
+            continue
 
-        # 고유 ID 생성
-        p_cd = f"EXCEL_{category}_{index}"
+        # 상세 정보 수집 (여러 컬럼 합치기)
+        notes = []
+        for k in col_map['note']:
+            actual_col = find_actual_col([k])
+            if actual_col and pd.notnull(row.get(actual_col)):
+                notes.append(f"{k}: {row.get(actual_col)}")
         
-        # 상세 설명 정제
-        note = str(row.get(col_note, ''))
+        full_note = " | ".join(notes) if notes else "정보 없음"
+        
+        # 금리 숫자 변환 (%, 쉼표 제거)
+        def clean_rate(val):
+            if pd.isnull(val): return 0.0
+            s_val = str(val).replace('%', '').replace(',', '').strip()
+            try:
+                return float(s_val)
+            except ValueError:
+                return 0.0
+
+        base_rate = clean_rate(row.get(c_base))
+        max_rate = clean_rate(row.get(c_max))
+        if max_rate == 0: max_rate = base_rate
+
+        # 고유 코드 생성
+        p_cd = re.sub(r'[^a-zA-Z0-9]', '', f"{bank}{name}")[:30] + f"_{idx}"
+        
+        # 우대 태그 자동 생성
         pref_tags = []
-        # 우대조건 키워드 분석하여 태그화
-        for keyword in ["급여", "첫거래", "첫 거래", "자동이체", "카드", "관리비", "오픈뱅킹"]:
-            if keyword in note:
-                pref_tags.append(keyword)
+        for kw in ["첫거래", "첫 거래", "급여", "자동이체", "카드", "앱", "마케팅"]:
+            if kw in full_note:
+                pref_tags.append(kw.replace(" ", ""))
 
         products.append({
             'fin_prdt_cd': p_cd,
             'kor_co_nm': bank,
             'fin_prdt_nm': name,
-            'join_way': str(row.get(col_join, '정보 없음')),
-            'mtrt_int': str(row.get(col_mtrt, '정보 없음')),
-            'etc_note': note if note != 'nan' else '정보 없음',
-            'pref_categories': json.dumps(pref_tags if pref_tags else ["일반"], ensure_ascii=False)
+            'category': category,
+            'join_way': str(row.get(find_actual_col(col_map['join_way']), '정보 없음')),
+            'mtrt_int': "엑셀 상세 정보 참조",
+            'etc_note': full_note,
+            'pref_categories': json.dumps(list(set(pref_tags)) if pref_tags else ["일반"], ensure_ascii=False)
         })
 
-        # 금리 데이터 추출 (숫자형으로 변환)
-        try:
-            r1 = float(row.get(col_base_rate, 0)) if pd.notnull(row.get(col_base_rate)) else 0
-            r2 = float(row.get(col_max_rate, 0)) if pd.notnull(row.get(col_max_rate)) else r1
-            if r2 < r1: r2 = r1 # 최고금리가 기본보다 낮을 수 없음
-        except:
-            r1, r2 = 0, 0
-
-        # 기간별 옵션 (엑셀에 기간별 컬럼이 따로 없을 경우 현재 추출값으로 12, 24, 36개월 생성)
-        for t in [12, 24, 36]:
+        # 기간별 옵션 (대출은 기간 개념이 다르지만, 앱 UI 호환을 위해 12개월 기본 생성)
+        terms = [12, 24, 36]
+        for t in terms:
             options.append({
                 'fin_prdt_cd': p_cd,
                 'save_trm': t,
-                'intr_rate': r1,
-                'intr_rate2': r2
+                'intr_rate': base_rate,
+                'intr_rate2': max_rate
             })
 
     return products, options, None
