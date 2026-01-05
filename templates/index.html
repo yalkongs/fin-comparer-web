@@ -389,7 +389,8 @@
         <nav id="sidebarNav">
             <button class="nav-btn active" data-cat="deposit">💰 정기예금</button>
             <button class="nav-btn" data-cat="saving">📈 적금 상품</button>
-            <button class="nav-btn" data-cat="credit">💳 개인 신용대출</button>
+            <button class="nav-btn" data-cat="credit_general">💳 신용대출(일반)</button>
+            <button class="nav-btn" data-cat="credit_limit">📉 마이너스통장</button>
             <button class="nav-btn" data-cat="demand">🏦 입출금 (보통예금)</button>
         </nav>
 
@@ -471,7 +472,8 @@
                     style="width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 14px; border-radius: 14px; font-family: inherit;">
                     <option value="deposit">정기예금</option>
                     <option value="saving">적금</option>
-                    <option value="credit">개인신용대출</option>
+                    <option value="credit_general">신용대출 (일반)</option>
+                    <option value="credit_limit">마이너스통장 (한도대출)</option>
                     <option value="demand">입출금 (보통예금)</option>
                 </select>
             </div>
@@ -503,7 +505,13 @@
         let viewMode = 'grid';
         let productsData = [];
 
-        const catNames = { 'deposit': '정기예금 최적 금리', 'saving': '적금 상품 최고 금리', 'credit': '개인 신용대출 최저 금리', 'demand': '입출금 상품 비교' };
+        const catNames = {
+            'deposit': '정기예금 최적 금리',
+            'saving': '적금 상품 최고 금리',
+            'credit_general': '일반신용대출 최저 금리',
+            'credit_limit': '마이너스통장 최저 금리',
+            'demand': '입출금 상품 비교'
+        };
 
         async function fetchStatus() {
             const res = await fetch('/api/status');
@@ -538,12 +546,12 @@
             grid.innerHTML = '';
             tableBody.innerHTML = '';
 
-            const isLoan = currentCat === 'credit' || currentCat === 'mortgage';
-            const bestRate = isLoan ? Math.min(...productsData.map(p => p.rate2)) : Math.max(...productsData.map(p => p.rate2));
+            const isLoan = currentCat.includes('credit');
+            const bestRate = isLoan ? Math.min(...productsData.filter(p => p.rate2 > 0).map(p => p.rate2)) : Math.max(...productsData.map(p => p.rate2));
 
             productsData.forEach((p, idx) => {
                 const isBest = p.rate2 === bestRate && bestRate > 0;
-                
+
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.style.animationDelay = (idx * 0.05) + 's';
@@ -597,7 +605,7 @@
             if (!selectedFile) return alert('파일을 선택해주세요.');
             submitBtn.disabled = true;
             submitBtn.textContent = '처리 중...';
-            
+
             const formData = new FormData();
             formData.append('file', selectedFile);
             formData.append('category', document.getElementById('uploadCategory').value);
@@ -611,7 +619,7 @@
                     msg.className = 'status-msg status-success';
                     msg.textContent = result.message;
                     fetchStatus(); fetchProducts();
-                    setTimeout(() => document.getElementById('uploadModal').style.display='none', 2000);
+                    setTimeout(() => document.getElementById('uploadModal').style.display = 'none', 2000);
                 } else {
                     msg.className = 'status-msg status-error';
                     msg.textContent = result.error;
