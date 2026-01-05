@@ -42,9 +42,18 @@ def get_products():
             'join_way': p[6],
             'mtrt_int': p[7],
             'etc_note': p[8],
-            'pref_categories': json.loads(p[9] if p[9] else '[]')
+            'pref_categories': json.loads(p[9] if p[9] else '[]'),
+            'diff_score': p[10], # Complexity Score
+            'prev_rate': p[11]   # For Trends
         })
     return jsonify(result)
+
+@app.route('/api/analysis')
+def get_analysis():
+    category = request.args.get('category', 'deposit')
+    term = int(request.args.get('term', 12))
+    from database import get_sector_analysis
+    return jsonify(get_sector_analysis(category, term))
 
 @app.route('/api/upload', methods=['POST'])
 def upload_excel():
