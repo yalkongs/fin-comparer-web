@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinTrack Pro | 금융 상품 경쟁력 분석</title>
+    <title>경쟁사 상품 분석 | iM뱅크 기준 경쟁력 평가</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -25,6 +25,10 @@
             --error: #ef4444;
             --glass: rgba(255, 255, 255, 0.03);
             --info: #3b82f6;
+            --im-bank: #0047a0;
+            /* iM Bank Primary Color */
+            --im-highlight: #facc15;
+            /* Yellow/Gold for highlighting */
         }
 
         * {
@@ -54,28 +58,25 @@
         }
 
         .logo {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 800;
-            margin-bottom: 48px;
-            background: linear-gradient(135deg, #818cf8, #4f46e5);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+            color: var(--text);
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
         .logo-box {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background: var(--accent);
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             box-shadow: 0 4px 12px var(--accent-glow);
         }
 
@@ -215,6 +216,26 @@
             transform: translateY(-8px);
             border-color: var(--accent);
             background: rgba(30, 41, 59, 0.8);
+        }
+
+        /* iM Bank Highlight Style */
+        .card.im-highlight {
+            border: 2px solid var(--im-highlight);
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.2);
+            background: rgba(0, 71, 160, 0.15);
+        }
+
+        .im-badge {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: var(--im-highlight);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
 
         .check-box {
@@ -369,21 +390,73 @@
             color: var(--text-muted);
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
+        /* Mobile Responsiveness */
+        @media (max-width: 1024px) {
+            body {
+                flex-direction: column;
             }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            aside {
+                width: 100%;
+                height: auto;
+                padding: 20px;
+                position: sticky;
+                top: 0;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 1px solid var(--border);
+                border-right: none;
             }
+
+            .logo {
+                margin-bottom: 0;
+            }
+
+            nav {
+                display: none;
+            }
+
+            /* Hide heavy menu on mobile or use hamburger */
+            main {
+                padding: 20px;
+            }
+
+            .dash-row {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            #compareDrawer {
+                left: 0;
+                padding: 15px;
+            }
+
+            .comp-tag {
+                display: none;
+            }
+
+            /* Hide tags to save space */
         }
 
-        .dash-card,
-        .card {
-            animation: slideUp 0.4s ease backwards;
+        @media (max-width: 640px) {
+            .logo span {
+                display: none;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -391,7 +464,7 @@
 <body>
     <aside>
         <div class="logo">
-            <div class="logo-box">F</div><span>FinTrack Pro</span>
+            <div class="logo-box">iM</div><span>경쟁사 상품 분석</span>
         </div>
         <nav id="sidebarNav">
             <button class="nav-btn active" data-cat="deposit">💰 정기예금</button>
@@ -401,26 +474,28 @@
             <button class="nav-btn" data-cat="demand">🏦 입출금 (보통예금)</button>
         </nav>
 
-        <div style="margin-top: auto; padding-top: 20px;">
+        <div style="margin-top: auto; padding-top: 20px; display: flex; gap: 10px;">
+            <button id="mobileMenuToggle"
+                style="display: none; padding: 10px; background: var(--glass); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">☰</button>
             <button id="openUploadBtn"
-                style="width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent); background: rgba(79, 70, 229, 0.1); color: var(--text); font-weight: 700; cursor: pointer; transition: 0.3s;">
-                📂 엑셀 데이터 업로드
+                style="flex: 1; padding: 12px; border-radius: 12px; border: 1px dashed var(--accent); background: rgba(79, 70, 229, 0.1); color: var(--text); font-weight: 700; cursor: pointer; font-size: 0.8rem;">
+                📂 업로드
             </button>
-            <div style="margin-top: 20px; text-align: center;">
-                <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 4px;">Developer: 황원철</div>
-                <div id="lastUpdateIdx" style="font-size: 0.75rem; color: var(--accent);">2026-01-06 00:00:00</div>
-            </div>
+        </div>
+        <div class="desktop-only" style="margin-top: 20px; text-align: center;">
+            <div id="lastUpdateIdx" style="font-size: 0.7rem; color: var(--accent);">2026-01-06 00:00:00</div>
         </div>
     </aside>
 
     <main>
         <header>
             <div>
-                <h1 id="viewTitle">정기예금 최적 금리 분석</h1>
-                <p style="color: var(--text-muted); margin-top: 4px;">권역별 평균 금리 및 상품 경쟁력 지표를 제공합니다.</p>
+                <h1 id="viewTitle" style="font-size: 1.8rem;">정기예금 최적 금리 분석</h1>
+                <p style="color: var(--text-muted); margin-top: 4px; font-size: 0.9rem;">iM뱅크 대비 경쟁사 상품의 금리 경쟁력을 평가합니다.
+                </p>
             </div>
             <div class="calc-box">
-                <span style="font-size: 0.8rem; color: var(--text-muted);">투자/대출금:</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">기준금액:</span>
                 <input type="text" id="globalAmount" class="calc-input" value="10,000,000">
                 <span style="font-size: 0.8rem; color: var(--text-muted);">원</span>
             </div>
@@ -582,28 +657,31 @@
 
             productsData.forEach((p, idx) => {
                 const isSelected = selectedItems.find(item => item.id === p.id);
-                const trend = p.rate2 > p.prev_rate ? `<span class="trend-up">▲ ${(p.rate2 - p.prev_rate).toFixed(2)}%</span>`
-                    : p.rate2 < p.prev_rate ? `<span class="trend-down">▼ ${(p.prev_rate - p.rate2).toFixed(2)}%</span>` : '';
-
+                const isImBank = p.bank.includes('iM') || p.bank.includes('아이엠') || p.bank.includes('대구은행');
+                
+                const trend = p.rate2 > p.prev_rate ? `<span class="trend-up">▲ ${(p.rate2 - p.prev_rate).toFixed(2)}%</span>` 
+                             : p.rate2 < p.prev_rate ? `<span class="trend-down">▼ ${(p.prev_rate - p.rate2).toFixed(2)}%</span>` : '';
+                
                 const realProfit = Math.floor(amount * (p.rate2 / 100) * (1 - 0.154));
                 const profitText = currentCat.includes('credit') ? '예상 이자비용' : '만기 실수령(이자)';
 
                 const card = document.createElement('div');
-                card.className = `card ${isSelected ? 'selected' : ''}`;
+                card.className = `card ${isSelected ? 'selected' : ''} ${isImBank ? 'im-highlight' : ''}`;
                 card.innerHTML = `
+                    ${isImBank ? '<div class="im-badge">iM뱅크 (기준)</div>' : ''}
                     <div class="check-box"></div>
-                    <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">${p.bank} ${trend}</span>
+                    <span style="font-size:0.75rem; color:${isImBank ? 'var(--im-highlight)' : 'var(--text-muted)'}; text-transform:uppercase; letter-spacing:1px; font-weight:700;">${p.bank} ${trend}</span>
                     <h3 class="prod-name" style="font-size:1.1rem; margin: 12px 0 24px 0; min-height:2.8rem; line-height:1.4;">${p.name}</h3>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <span style="color:var(--text-muted); font-size:0.8rem;">최고 금리</span>
-                        <div class="rate-val" style="color:var(--success); font-size:1.4rem; font-weight:800;">
+                        <div class="rate-val" style="color:${isImBank ? 'var(--im-highlight)' : 'var(--success)'}; font-size:1.4rem; font-weight:800;">
                             ${p.rate2.toFixed(2)}%
                             <span class="diff-badge diff-${p.diff_score}">${diffText[p.diff_score]}</span>
                         </div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; font-size:0.85rem;">
                         <span style="color:var(--text-muted)">${profitText}:</span>
-                        <span style="color:var(--success); font-weight:700; float:right;">${currentCat.includes('credit') ? '' : '+'}${realProfit.toLocaleString()}원</span>
+                        <span style="color:${isImBank ? 'var(--im-highlight)' : 'var(--success)'}; font-weight:700; float:right;">${currentCat.includes('credit') ? '' : '+'}${realProfit.toLocaleString()}원</span>
                     </div>
                 `;
                 card.onclick = (e) => {
