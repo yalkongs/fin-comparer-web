@@ -59,7 +59,7 @@ def update_timestamp():
     conn.close()
 
 def get_bank_sector(bank_name):
-    major = ['국민은행', '우리은행', '신한은행', '하나은행', '농협은행', '기업은행']
+    major = ['국민은행', '우리은행', '신한은행', '하나은행', '농협은행', '기업은행', 'iM뱅크', '아이엠뱅크', '대구은행']
     internet = ['카카오뱅크', '케이뱅크', '토스뱅크']
     if any(m in bank_name for m in major): return '시중은행'
     if any(i in bank_name for i in internet): return '인터넷뱅크'

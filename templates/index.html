@@ -475,7 +475,31 @@
             }
 
             nav {
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                width: 100%;
+                gap: 5px;
+                padding: 10px 0;
+            }
+
+            .nav-btn {
+                white-space: nowrap;
+                padding: 10px 15px;
+                font-size: 0.85rem;
+            }
+
+            .nav-btn span {
+                font-size: 0.85rem;
+            }
+
+            .data-dot {
                 display: none;
+            }
+
+            #sidebarNav {
+                border-top: 1px solid var(--border);
+                margin-top: 10px;
             }
 
             /* Hide heavy menu on mobile or use hamburger */
@@ -484,7 +508,8 @@
             }
 
             .dash-row {
-                grid-template-columns: 1fr;
+                display: none;
+                /* Dash row at top hidden on mobile */
             }
 
             header {
@@ -603,8 +628,13 @@
             <p style="margin-top:10px;">엑셀 파일을 업로드하여 분석을 시작하세요.</p>
         </div>
 
+        <div id="sectorTextSummary"
+            style="margin-top: 50px; padding: 20px; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+            <!-- Simple text summary of sector analysis -->
+        </div>
+
         <footer
-            style="margin-top: 100px; padding: 40px 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            style="margin-top: 20px; padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
             <p>Written by <span style="color:var(--accent); font-weight:600;">황원철</span> with Antigravity</p>
         </footer>
     </main>
@@ -709,16 +739,27 @@
         async function fetchAnalysis() {
             const res = await fetch(`/api/analysis?category=${currentCat}&term=${currentTerm}`);
             const data = await res.json();
-            const container = document.getElementById('dashContainer');
-            container.innerHTML = '';
-            data.forEach(s => {
-                container.innerHTML += `
-                    <div class="dash-card">
-                        <div class="dash-label">${s.sector} 평균 금리 (${s.count}개)</div>
-                        <div class="dash-val">${s.avg_rate.toFixed(2)}%</div>
-                    </div>
-                `;
-            });
+
+            // Dashboard (Card view - still useful for desktop)
+            const dashContainer = document.getElementById('dashContainer');
+            if (dashContainer) {
+                dashContainer.innerHTML = '';
+                data.forEach(s => {
+                    dashContainer.innerHTML += `
+                        <div class="dash-card">
+                            <div class="dash-label">${s.sector} 평균 금리 (${s.count}개)</div>
+                            <div class="dash-val">${s.avg_rate.toFixed(2)}%</div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Simple Text Summary (Always at bottom)
+            const summaryEl = document.getElementById('sectorTextSummary');
+            if (summaryEl) {
+                const summaryText = data.map(s => `${s.sector}: ${s.avg_rate.toFixed(2)}% (${s.count}개)`).join(' | ');
+                summaryEl.innerHTML = `📊 권역별 평균 금리 요약 (실시간): ${summaryText || '데이터 없음'}`;
+            }
         }
 
         async function fetchProducts() {

@@ -45,10 +45,15 @@ def get_products():
     term = int(request.args.get('term', 12))
     products = query_best_products(category, term, limit=50)
     
+    import re
     result = []
     for p in products:
+        bank_name = p[1]
+        # Remove suffixes like 은행, 뱅크, 주식회사 and redundant spaces
+        bank_name = re.sub(r'(은행|뱅크|주식회사|\s)', '', bank_name)
+        
         result.append({
-            'id': p[0], 'bank': p[1], 'name': p[2], 'term': p[3], 'rate': p[4], 'rate2': p[5],
+            'id': p[0], 'bank': bank_name, 'name': p[2], 'term': p[3], 'rate': p[4], 'rate2': p[5],
             'join_way': p[6], 'mtrt_int': p[7], 'etc_note': p[8],
             'pref_categories': json.loads(p[9] if p[9] else '[]'),
             'diff_score': p[10], 'prev_rate': p[11]
