@@ -219,6 +219,45 @@
             gap: 24px;
         }
 
+        .grid.list {
+            grid-template-columns: 1fr;
+        }
+
+        .grid.list .card {
+            display: flex;
+            align-items: center;
+            padding: 15px 28px;
+            gap: 20px;
+        }
+
+        .grid.list .card .prod-name {
+            margin: 0 !important;
+            min-height: auto !important;
+            flex: 1;
+        }
+
+        .grid.list .card .bank-tag-container {
+            width: 150px;
+        }
+
+        .grid.list .card .rate-container {
+            width: 180px;
+            text-align: right;
+            margin-bottom: 0 !important;
+        }
+
+        .grid.list .card .profit-container {
+            width: 200px;
+            background: none !important;
+            padding: 0 !important;
+        }
+
+        .grid.list .card .im-badge {
+            top: 50%;
+            right: -10px;
+            transform: translateY(-50%);
+        }
+
         .card {
             background: var(--card);
             border: 1px solid var(--border);
@@ -507,7 +546,7 @@
                 style="display: none; padding: 10px; background: var(--glass); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">☰</button>
             <button id="openUploadBtn"
                 style="flex: 1; padding: 12px; border-radius: 12px; border: 1px dashed var(--accent); background: rgba(79, 70, 229, 0.1); color: var(--text); font-weight: 700; cursor: pointer; font-size: 0.8rem;">
-                📂 업로드
+                📂 데이터 업로드
             </button>
         </div>
         <div class="desktop-only" style="margin-top: 20px; text-align: center;">
@@ -559,6 +598,11 @@
             <h2>표시할 데이터가 없습니다.</h2>
             <p style="margin-top:10px;">엑셀 파일을 업로드하여 분석을 시작하세요.</p>
         </div>
+
+        <footer
+            style="margin-top: 100px; padding: 40px 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            <p>Written by 황원철 with Antigravity</p>
+        </footer>
     </main>
 
     <!-- Compare Drawer -->
@@ -708,17 +752,19 @@
                 card.innerHTML = `
                     ${isImBank ? '<div class="im-badge">iM뱅크 (기준)</div>' : ''}
                     <div class="check-box"></div>
-                    <span style="font-size:0.75rem; color:${isImBank ? 'var(--im-highlight)' : 'var(--text-muted)'}; text-transform:uppercase; letter-spacing:1px; font-weight:700;">${p.bank} ${trend}</span>
+                    <div class="bank-tag-container">
+                        <span style="font-size:0.75rem; color:${isImBank ? 'var(--im-highlight)' : 'var(--text-muted)'}; text-transform:uppercase; letter-spacing:1px; font-weight:700;">${p.bank} ${trend}</span>
+                    </div>
                     <h3 class="prod-name" style="font-size:1.1rem; margin: 12px 0 24px 0; min-height:2.8rem; line-height:1.4;">${p.name}</h3>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <div class="rate-container" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <span style="color:var(--text-muted); font-size:0.8rem;">최고 금리</span>
                         <div class="rate-val" style="color:${isImBank ? 'var(--im-highlight)' : 'var(--success)'}; font-size:1.4rem; font-weight:800;">
                             ${p.rate2.toFixed(2)}%
                             <span class="diff-badge diff-${p.diff_score}">${diffText[p.diff_score]}</span>
                         </div>
                     </div>
-                    <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; font-size:0.85rem;">
-                        <span style="color:var(--text-muted)">${profitText}:</span>
+                    <div class="profit-container" style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; font-size:0.85rem;">
+                        <span class="profit-label" style="color:var(--text-muted)">${profitText}:</span>
                         <span style="color:${isImBank ? 'var(--im-highlight)' : 'var(--success)'}; font-weight:700; float:right;">${currentCat.includes('credit') ? '' : '+'}${realProfit.toLocaleString()}원</span>
                     </div>
                 `;
@@ -910,6 +956,23 @@
         };
 
         document.getElementById('termSelect').onchange = (e) => { currentTerm = e.target.value; fetchProducts(); };
+
+        // View Toggle Logic
+        const gridEl = document.getElementById('productGrid');
+        const gridBtn = document.getElementById('gridToggle');
+        const listBtn = document.getElementById('listToggle');
+
+        gridBtn.onclick = () => {
+            gridEl.classList.remove('list');
+            gridBtn.classList.add('active'); gridBtn.style.background = 'var(--accent)'; gridBtn.style.color = 'white';
+            listBtn.classList.remove('active'); listBtn.style.background = 'transparent'; listBtn.style.color = 'var(--text-muted)';
+        };
+
+        listBtn.onclick = () => {
+            gridEl.classList.add('list');
+            listBtn.classList.add('active'); listBtn.style.background = 'var(--accent)'; listBtn.style.color = 'white';
+            gridBtn.classList.remove('active'); gridBtn.style.background = 'transparent'; gridBtn.style.color = 'var(--text-muted)';
+        };
 
         fetchProducts(); // Initial Load
     </script>
