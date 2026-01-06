@@ -160,3 +160,10 @@ def get_sector_analysis(category, term=12):
         avg = sum(rates) / len(rates) if rates else 0
         result.append({'sector': sector, 'avg_rate': round(avg, 2), 'count': len(rates)})
     return result
+def get_categories_status():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT category, COUNT(*) FROM products GROUP BY category")
+    rows = cursor.fetchall()
+    conn.close()
+    return {row[0]: row[1] for row in rows}

@@ -19,9 +19,11 @@ def index():
     return render_template('index.html')
 
 @app.route('/api/status')
-def status():
+def get_status():
+    from database import get_last_update, get_categories_status
     return jsonify({
-        'last_updated': get_last_update() or '데이터 없음'
+        'last_updated': get_last_update() or '데이터 없음',
+        'categories': get_categories_status()
     })
 
 @app.route('/api/products')

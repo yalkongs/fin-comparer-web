@@ -114,6 +114,24 @@
             box-shadow: 0 4px 15px var(--accent-glow);
         }
 
+        .data-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: auto;
+        }
+
+        .dot-true {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .dot-false {
+            background: var(--text-muted);
+            opacity: 0.3;
+        }
+
         /* Main Area */
         main {
             flex: 1;
@@ -467,11 +485,21 @@
             <div class="logo-box">iM</div><span>경쟁사 상품 분석</span>
         </div>
         <nav id="sidebarNav">
-            <button class="nav-btn active" data-cat="deposit">💰 정기예금</button>
-            <button class="nav-btn" data-cat="saving">📈 적금 상품</button>
-            <button class="nav-btn" data-cat="credit_general">💳 신용대출(일반)</button>
-            <button class="nav-btn" data-cat="credit_limit">📉 마이너스통장</button>
-            <button class="nav-btn" data-cat="demand">🏦 입출금 (보통예금)</button>
+            <button class="nav-btn active" data-cat="deposit"><span>💰 정기예금</span>
+                <div class="data-dot" id="dot-deposit"></div>
+            </button>
+            <button class="nav-btn" data-cat="saving"><span>📈 적금 상품</span>
+                <div class="data-dot" id="dot-saving"></div>
+            </button>
+            <button class="nav-btn" data-cat="credit_general"><span>💳 신용대출(일반)</span>
+                <div class="data-dot" id="dot-credit_general"></div>
+            </button>
+            <button class="nav-btn" data-cat="credit_limit"><span>📉 마이너스통장</span>
+                <div class="data-dot" id="dot-credit_limit"></div>
+            </button>
+            <button class="nav-btn" data-cat="demand"><span>🏦 입출금 (보통예금)</span>
+                <div class="data-dot" id="dot-demand"></div>
+            </button>
         </nav>
 
         <div style="margin-top: auto; padding-top: 20px; display: flex; gap: 10px;">
@@ -618,6 +646,16 @@
             const res = await fetch('/api/status');
             const data = await res.json();
             document.getElementById('lastUpdateIdx').textContent = data.last_updated || '업로드 기록 없음';
+
+            // Update dots
+            const cats = ['deposit', 'saving', 'credit_general', 'credit_limit', 'demand'];
+            cats.forEach(c => {
+                const dot = document.getElementById(`dot-${c}`);
+                if (dot) {
+                    const hasData = data.categories && data.categories[c] > 0;
+                    dot.className = `data-dot dot-${hasData}`;
+                }
+            });
         }
 
         async function fetchAnalysis() {
@@ -658,10 +696,10 @@
             productsData.forEach((p, idx) => {
                 const isSelected = selectedItems.find(item => item.id === p.id);
                 const isImBank = p.bank.includes('iM') || p.bank.includes('아이엠') || p.bank.includes('대구은행');
-                
-                const trend = p.rate2 > p.prev_rate ? `<span class="trend-up">▲ ${(p.rate2 - p.prev_rate).toFixed(2)}%</span>` 
-                             : p.rate2 < p.prev_rate ? `<span class="trend-down">▼ ${(p.prev_rate - p.rate2).toFixed(2)}%</span>` : '';
-                
+
+                const trend = p.rate2 > p.prev_rate ? `<span class="trend-up">▲ ${(p.rate2 - p.prev_rate).toFixed(2)}%</span>`
+                    : p.rate2 < p.prev_rate ? `<span class="trend-down">▼ ${(p.prev_rate - p.rate2).toFixed(2)}%</span>` : '';
+
                 const realProfit = Math.floor(amount * (p.rate2 / 100) * (1 - 0.154));
                 const profitText = currentCat.includes('credit') ? '예상 이자비용' : '만기 실수령(이자)';
 
