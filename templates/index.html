@@ -14,8 +14,9 @@
         :root {
             --bg: #0b0e14;
             --sidebar: #12161f;
-            --accent: #4f46e5;
-            --accent-glow: rgba(79, 70, 229, 0.4);
+            --accent: #26d9d1;
+            /* Set global accent to iM Bank Mint */
+            --accent-glow: rgba(38, 217, 209, 0.4);
             --text: #f8fafc;
             --text-muted: #94a3b8;
             --card: rgba(30, 41, 59, 0.5);
@@ -61,7 +62,7 @@
             font-size: 1.5rem;
             font-weight: 800;
             margin-bottom: 40px;
-            color: var(--text);
+            color: var(--im-bank);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -70,14 +71,16 @@
         .logo-box {
             width: 36px;
             height: 36px;
-            background: var(--accent);
+            background: var(--im-bank);
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: var(--sidebar);
+            /* Sidebar color for contrast */
+            font-weight: 900;
             font-size: 1.2rem;
-            box-shadow: 0 4px 12px var(--accent-glow);
+            box-shadow: 0 4px 15px rgba(38, 217, 209, 0.4);
         }
 
         nav {
@@ -110,7 +113,8 @@
 
         .nav-btn.active {
             background: var(--accent);
-            color: white;
+            color: var(--sidebar);
+            font-weight: 800;
             box-shadow: 0 4px 15px var(--accent-glow);
         }
 
@@ -172,12 +176,12 @@
         .calc-input {
             background: transparent;
             border: none;
-            color: var(--success);
+            color: var(--accent);
             font-weight: 700;
             width: 120px;
             font-size: 1rem;
             text-align: right;
-            border-bottom: 1px solid var(--success);
+            border-bottom: 2px solid var(--accent);
         }
 
         .calc-input:focus {
@@ -601,7 +605,7 @@
 
         <footer
             style="margin-top: 100px; padding: 40px 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-            <p>Written by 황원철 with Antigravity</p>
+            <p>Written by <span style="color:var(--accent); font-weight:600;">황원철</span> with Antigravity</p>
         </footer>
     </main>
 
